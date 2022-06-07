@@ -1,0 +1,42 @@
+let inputConfig = input.config();
+let Branch = inputConfig.Branch;
+let Member = inputConfig.Member;
+let Url_AT = inputConfig.Url_AT;
+let Url_SL = inputConfig.Url_SL;
+let Description = inputConfig.Description;
+let ID = inputConfig.ID;
+let ClickupURL = "https://api.clickup.com/api/v2/";
+let Time = new Date(inputConfig.Time).getTime();
+
+//Click Up Task Data
+let pay_load =
+    {
+        "name": Branch + Member,
+        "assignees": [43564739],
+        "priority": 1,
+        "description":
+            "Branch: " + Branch + "\r\n" + 
+            "Member: " + Member + "\r\n" + 
+            "Airtable URL: " + Url_AT + "\r\n" + 
+            "Slack URL: " + Url_SL + "\r\n" + 
+            "Description: " + "\r\n" + Description,
+        "start_date": Time,
+        "start_date_time": true,
+        "custom_fields":
+            [
+                {
+                    "id": "8fd76144-a523-426f-84af-409ef1f828a3",
+                    "value": ID
+                }
+            ],
+    }
+
+let response = await fetch(ClickupURL+"list/"+"192951821"+"/task", {
+    method: 'POST',
+    body: JSON.stringify(pay_load),
+    headers:
+            {
+                "Authorization": "pk_43564739_QM1EAF05TWM11AZBF04TCT2M8KMYCAWX",
+                "Content-Type" : "application/json"
+            },
+});
