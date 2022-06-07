@@ -1,0 +1,53 @@
+//최초 생성: 반기민 2022-03-12
+//최종 수정: 김형준 2022-05-04
+
+//뷰 정의: 장애 문의 요청 건의 미분류
+let Table_Q = base.getTable("VOC-Q");
+let View_SUS = Table_Q.getView("VOC-Q 장애 after 2022-01-01");
+let Query_SUS = await View_SUS.selectRecordsAsync();
+
+//뷰 정의: 일별 건수 보기
+let Table_Daily_Counting = base.getTable("Daily Counting");
+let View_Daily_Counting = Table_Daily_Counting.getView("Daily Update by Schedule");
+let Query_Daily_Counting = await View_Daily_Counting.selectRecordsAsync({
+    sorts: [
+       {field: "날짜", direction: "desc"}
+    ]
+});
+let Records_SUS = Query_SUS.records;
+let Records_Daily_Counting = Query_Daily_Counting.records;
+
+//변수 정의
+let Array_SUS = []; //장애
+let Pay_loads = []; //일별 건수 기록을 위한 중간 변수
+
+//일별 건수 기록
+for (let i=0; i<=Records_Daily_Counting.length-1; i++){
+
+    //일 시간범위: 시점
+    let Sdate = new Date(Records_Daily_Counting[i].getCellValue("날짜"));
+    Sdate.setHours(Sdate.getHours()-9);
+    let SdateToString = Sdate.toISOString();
+
+    //일 시간범위: 종점
+    let Edate = new Date(Sdate.setDate(Sdate.getDate()));
+    Edate.setDate(Sdate.getDate()+1);
+    let EdateToString = Edate.toISOString();
+
+    //일별 건수 기록을 위한 쿼리
+    let Array_SUS = Records_SUS.filter(Records_SUS => Records_SUS.getCellValue("Officially Created Time") >= SdateToString && Records_SUS.getCellValue("Officially Created Time") < EdateToString);
+    
+    //Pay_Loads에 일별 건수 기록
+    Pay_loads.push({
+        id: Records_Daily_Counting[i].id,
+        fields: {
+        "장애": Array_SUS.length,
+        }
+    });
+};
+
+//"Daily Counting" 테이블에 Pay_loads 데이터 업데이트 (limit, 50개씩 업데이트)
+while (Pay_loads.length > 0) {
+    await Table_Daily_Counting.updateRecordsAsync(Pay_loads.slice(0, 50));
+    Pay_loads = Pay_loads.slice(50);
+};
