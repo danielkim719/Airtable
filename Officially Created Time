@@ -1,0 +1,123 @@
+//작성자: 반기민
+//작성일: 2022-03-12
+//수정일: 2022-03-16
+
+//airtable input variables 함수 선언
+let A = input.config();
+
+//"VOC-Q" 테이블 쿼리
+let VOC_Q_table = base.getTable('VOC-Q');
+
+//"Operating Policy" 테이블 & 뷰 쿼리
+let Operating_Policy_table = base.getTable('Operating Policy');
+let Operating_Policy_view = Operating_Policy_table.getView('Operating_time');
+let Operating_Policy_query = await Operating_Policy_view.selectRecordsAsync();
+
+//CS 운영시간 obj. 정의
+let Operating_time = {
+    "start_hour" : Operating_Policy_query.records[0].getCellValue('시작: Hour'),
+    "start_minute" : Operating_Policy_query.records[0].getCellValue('시작: Minute'),
+    "end_hour" : Operating_Policy_query.records[0].getCellValue('종료: Hour'),
+    "end_minute" :Operating_Policy_query.records[0].getCellValue('종료: Minute')
+};
+
+//Pay_loads 변수 선언
+let VOC_Q_created_time_pay_loads = [];
+
+
+//CS 운영시간을 고려한 정규 상담일시 정의
+let VOC_Q_created_time = A.created_time;
+let VOC_Q_created_time_date = new Date(VOC_Q_created_time);
+let VOC_Q_created_time_getDay = new Date(VOC_Q_created_time);
+VOC_Q_created_time_getDay.setHours(VOC_Q_created_time_getDay.getHours()+9);
+let VOC_Q_created_time_days = VOC_Q_created_time_getDay.getDay();
+
+//주말, 평일에 따른 정규 상담일시 설정
+if (VOC_Q_created_time_days == 0 || VOC_Q_created_time_days == 6){
+    if (VOC_Q_created_time_days == 0){
+        console.log("주말: "+ VOC_Q_created_time_days);
+        VOC_Q_created_time_date.setHours(VOC_Q_created_time_date.getHours()+9);
+        VOC_Q_created_time_date.setDate(VOC_Q_created_time_date.getDate()+1);
+        VOC_Q_created_time_date.setHours(Operating_time.start_hour-9);
+        VOC_Q_created_time_date.setMinutes(Operating_time.start_minute);
+        VOC_Q_created_time_date.setSeconds(0);
+        console.log(VOC_Q_created_time_date);
+    } else if (VOC_Q_created_time_days == 6){
+        console.log("주말: " + VOC_Q_created_time_days);
+        VOC_Q_created_time_date.setHours(VOC_Q_created_time_date.getHours()+9);
+        VOC_Q_created_time_date.setDate(VOC_Q_created_time_date.getDate()+2);
+        VOC_Q_created_time_date.setHours(Operating_time.start_hour-9);
+        VOC_Q_created_time_date.setMinutes(Operating_time.start_minute);
+        VOC_Q_created_time_date.setSeconds(0);
+        console.log(VOC_Q_created_time_date);
+    } else{
+    };
+} else{
+    //해당일의 상담시작 기준일시 설정
+    let Operaintg_start_date_time = new Date(VOC_Q_created_time);
+    Operaintg_start_date_time.setHours(Operaintg_start_date_time.getHours()+9);
+    console.log(Operaintg_start_date_time);
+    Operaintg_start_date_time.setHours(Operating_time.start_hour-9);
+    Operaintg_start_date_time.setMinutes(Operating_time.start_minute);                            
+    Operaintg_start_date_time.setSeconds(0);
+
+    //해당일의 상담종료 기준일시 설정
+    let Operaintg_end_date_time = new Date(VOC_Q_created_time);
+    Operaintg_end_date_time.setHours(Operaintg_end_date_time.getHours()+9);
+    Operaintg_end_date_time.setHours(Operating_time.end_hour-9);
+    Operaintg_end_date_time.setMinutes(Operating_time.end_minute);                            
+    Operaintg_end_date_time.setSeconds(0);
+    console.log("상담시작 기준일시")
+    console.log(Operaintg_start_date_time);
+    console.log("상담종료 기준일시")
+    console.log(Operaintg_end_date_time);
+    console.log("상담 요청일시");
+    console.log(VOC_Q_created_time_date);
+    
+    if (VOC_Q_created_time_date.valueOf() > Operaintg_end_date_time.valueOf()){
+        console.log("평일: " + VOC_Q_created_time_days + " | 업무시간 외 (after)");
+        if (VOC_Q_created_time_days >= 1 && VOC_Q_created_time_days <= 4){
+            console.log("평일: " + VOC_Q_created_time_days);
+            VOC_Q_created_time_date.setHours(VOC_Q_created_time_date.getHours()+9);
+            VOC_Q_created_time_date.setDate(VOC_Q_created_time_date.getDate()+1);
+            VOC_Q_created_time_date.setHours(Operating_time.start_hour-9);
+            VOC_Q_created_time_date.setMinutes(Operating_time.start_minute);
+            VOC_Q_created_time_date.setSeconds(0);
+            console.log(VOC_Q_created_time_date);
+        } else if (VOC_Q_created_time_days == 5){
+            console.log("평일: " + VOC_Q_created_time_days);
+            VOC_Q_created_time_date.setHours(VOC_Q_created_time_date.getHours()+9);
+            VOC_Q_created_time_date.setDate(VOC_Q_created_time_date.getDate()+3);
+            VOC_Q_created_time_date.setHours(Operating_time.start_hour-9);
+            VOC_Q_created_time_date.setMinutes(Operating_time.start_minute);
+            VOC_Q_created_time_date.setSeconds(0);
+            console.log(VOC_Q_created_time_date);
+        };
+    } else if (VOC_Q_created_time_date.valueOf() < Operaintg_start_date_time.valueOf()){
+        console.log("평일: " + VOC_Q_created_time_days + " | 업무시간 외 (before)");
+        VOC_Q_created_time_date.setHours(VOC_Q_created_time_date.getHours()+9);
+        VOC_Q_created_time_date.setHours(Operating_time.start_hour-9);
+        VOC_Q_created_time_date.setMinutes(Operating_time.start_minute);
+        VOC_Q_created_time_date.setSeconds(0);
+        console.log(VOC_Q_created_time_date);
+    } else{
+        console.log("평일: " + VOC_Q_created_time_days + " | 업무시간 내");            
+        console.log(VOC_Q_created_time_date);
+    };
+};
+
+//필드별 저장될 값을 Pay_load 변수에 로딩
+VOC_Q_created_time_pay_loads.push({
+    id: A.record_id,
+    fields: {
+    "Officially Created Time": VOC_Q_created_time_date
+    },
+});
+
+console.log(VOC_Q_created_time_pay_loads.length);
+
+//"VOC-Q" 테이블에 VOC_Q_created_time_pay_loads 데이터 업데이트 (limit, 50개씩 업데이트)
+while (VOC_Q_created_time_pay_loads.length > 0) {
+    await VOC_Q_table.updateRecordsAsync(VOC_Q_created_time_pay_loads.slice(0, 50));
+    VOC_Q_created_time_pay_loads = VOC_Q_created_time_pay_loads.slice(50);
+};

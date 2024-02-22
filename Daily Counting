@@ -1,0 +1,102 @@
+//작성자: 반기민
+//작성일: 2022-02-08
+
+//사용자(HR.DB_지점운영) 테이블 정의
+let Table_HR = base.getTable("HR.DB_지점운영");
+
+//사용자 지점&재직 뷰 정의 및 사용자 리스트 GET
+let View_employment_branch = Table_HR.getView("HR.DB_지점&재직");
+let Query_employment_branch = await View_employment_branch.selectRecordsAsync();
+var Queue_employment_branch_Qty = Query_employment_branch.records;
+console.log(Query_employment_branch);
+console.log(Queue_employment_branch_Qty);
+
+//사용자 지점&재직 사용자 수 정의
+let Num_user = Queue_employment_branch_Qty.length;
+console.log("당일 사용자수 = "+Num_user);
+
+//Date 정의
+Date.prototype.addDays = function(days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+};
+
+//저장할 테이블(Daily Counting) 선언
+let Table_Counting = base.getTable("Daily Counting");
+
+//당일 날짜 설정
+let Today = new Date();
+Today.setHours(0,0,0,0);
+
+//당일 레코드 생성
+let Record_today_p_s = [];
+let Record_today_p = {};
+Record_today_p["날짜"] = Today.addDays(1);
+Record_today_p_s[0] = {fields:Record_today_p};
+await Table_Counting.createRecordsAsync(Record_today_p_s);
+
+//저장할 뷰 선언
+let View_Counting = Table_Counting.getView("Daily Update by Schedule");
+let Query_Counting = await View_Counting.selectRecordsAsync();
+
+//생성된 레코드 정의
+let Record_today = await Query_Counting.records[0];
+console.log(Record_today);
+
+
+
+/*
+//작성자: 김형준
+//작성일: 2022-02-24
+
+//테이블 선언; CS.BMS / VOC-Q
+let Table_VOC = base.getTable("VOC-Q");
+
+//뷰 선언; CS.BMS / VOC-Q / VOC-Q 장애,건의,요청,문의 after 2022-01-01
+let View_VOC_SUS = Table_VOC.getView("VOC-Q 장애 after 2022-01-01");
+let View_VOC_SUG = Table_VOC.getView("VOC-Q 건의 after 2022-01-01");
+let View_VOC_REQ = Table_VOC.getView("VOC-Q 요청 after 2022-01-01");
+let View_VOC_QUE = Table_VOC.getView("VOC-Q 문의 after 2022-01-01");
+let Query_VOC_SUS = await View_VOC_SUS.selectRecordsAsync();
+let Query_VOC_SUG = await View_VOC_SUG.selectRecordsAsync();
+let Query_VOC_REQ = await View_VOC_REQ.selectRecordsAsync();
+let Query_VOC_QUE = await View_VOC_QUE.selectRecordsAsync();
+var Queue_VOC_SUS_Qty = Query_VOC_SUS.records;
+var Queue_VOC_SUG_Qty = Query_VOC_SUG.records;
+var Queue_VOC_REQ_Qty = Query_VOC_REQ.records;
+var Queue_VOC_QUE_Qty = Query_VOC_QUE.records;
+console.log(Query_VOC_SUS);
+console.log(Queue_VOC_SUS_Qty);
+console.log(Query_VOC_SUG);
+console.log(Queue_VOC_SUG_Qty);
+console.log(Query_VOC_REQ);
+console.log(Queue_VOC_REQ_Qty);
+console.log(Query_VOC_QUE);
+console.log(Queue_VOC_QUE_Qty);
+
+//장애/건의/요청/문의 선언
+let Num_SUS = Queue_VOC_SUS_Qty.length;
+console.log("장애 = "+Num_SUS);
+let Num_SUG = Queue_VOC_SUG_Qty.length;
+console.log("건의 = "+Num_SUG);
+let Num_REQ = Queue_VOC_REQ_Qty.length;
+console.log("요청 = "+Num_REQ);
+let Num_QUE = Queue_VOC_QUE_Qty.length;
+console.log("문의 = "+Num_QUE);
+
+*/
+
+//필드별 저장될 값을 Pay_load 변수에 로딩
+let Pay_load = null;
+Pay_load = {
+    "User": Num_user/*,
+    "장애": Num_SUS,
+    "건의": Num_SUG,
+    "요청": Num_REQ,
+    "문의": Num_QUE*/
+};
+
+//Daily Counting 테이블의 당일 레코드에 사용자수(Pay_load) 값 저장
+await Table_Counting.updateRecordAsync(Record_today.id, Pay_load);
+
